@@ -22,9 +22,11 @@ fn main() -> Result<(), eframe::Error> {
             );
 
             let mut shapes: Vec<egui::Shape> = vec![];
-
-            let hexagon = egui::Shape::convex_polygon(gui::hexagon_vertices(pos2(100.0, 100.0), 50.0), egui::Color32::TRANSPARENT, (1.0, egui::Color32::WHITE));
+            let hex_centers = gui::gen_map(2.0);
+            for h in hex_centers.as_slice(){
+                let hexagon = egui::Shape::convex_polygon(gui::hexagon_vertices(*h, 50.0), egui::Color32::TRANSPARENT, (1.0, egui::Color32::WHITE));
             shapes.push(hexagon);
+            }
             painter.extend(shapes);
         });
     })
