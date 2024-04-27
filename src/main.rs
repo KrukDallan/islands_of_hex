@@ -2,7 +2,7 @@
 //#![allow(rustdoc::missing_crate_level_docs)] // it's an example
 
 use eframe::egui;
-
+use egui::{pos2};
 
 mod gui;
 fn main() -> Result<(), eframe::Error> {
