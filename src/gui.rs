@@ -28,12 +28,12 @@ pub fn gen_map(side: f32) -> Vec<Pos2> {
     let dist: f32 = side*2 as f32;
 
     for i in 1..=7 {
-        let y = (dist + offset)*i as f32;
+        let y = (dist)*i as f32;
         let mut x: f32 = 0.0;
         for j in 1..=7 {
-            x = (dist + offset) * (j as f32);
-            if i >= 3 && i <= 5 {
-                if j >= 3 && j <= 5 {
+            x = (dist) * (j as f32);
+            if i >= 3 && i <= 4 {
+                if j >= 3 && j <= 4 {
                     hex_centers.push(pos2(x, y));
                 }
             } else {
@@ -62,11 +62,29 @@ pub fn gen_map(side: f32) -> Vec<Pos2> {
         }
     }
 
-    for i in new_centers.as_slice(){
+/*     for i in new_centers.as_slice(){
         hex_centers.push(*i);
-    }
+    } */
 
     hex_centers 
+}
+
+pub fn gen_points(side: f32) -> Vec<Pos2>{
+
+    let mut points: Vec<Pos2> = vec![];
+
+    let dist: f32 = side*2 as f32;
+
+    for i in 1..=7 {
+        let y = (dist)*i as f32;
+        let mut x: f32 = 0.0;
+        for j in 1..=7 {
+            x = (dist) * (j as f32);
+                points.push(pos2(x, y));    
+        }
+    }
+
+    points
 }
 
 /// Returns the index of the nearest point to 'target'
