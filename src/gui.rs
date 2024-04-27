@@ -25,15 +25,15 @@ pub fn gen_map(side: f32) -> Vec<Pos2> {
 
     let offset: f32 = 10.0;
 
-    let dist: f32 = side*side as f32;
+    let dist: f32 = side*2 as f32;
 
-    for i in 0..7 {
+    for i in 1..=7 {
         let y = (dist + offset)*i as f32;
         let mut x: f32 = 0.0;
-        for j in 0..7 {
+        for j in 1..=7 {
             x = (dist + offset) * (j as f32);
-            if i >= 2 && i <= 4 {
-                if j >= 2 && j <= 4 {
+            if i >= 3 && i <= 5 {
+                if j >= 3 && j <= 5 {
                     hex_centers.push(pos2(x, y));
                 }
             } else {
@@ -49,7 +49,7 @@ pub fn gen_map(side: f32) -> Vec<Pos2> {
             let index = nearest(*p, &points);
             match index{
                 Some(x) =>{
-                    if !hex_centers.contains(&points[x]) && !new_centers.contains(&points[x]){
+                    if !hex_centers.contains(&points[x]){
                         counter -= 1;
                         new_centers.push(points[x]);
                         points.remove(x);
