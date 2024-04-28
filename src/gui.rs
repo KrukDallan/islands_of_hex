@@ -91,10 +91,10 @@ pub fn gen_map(side: f32) -> Vec<Pos2> {
     let dist: f32 = side * 2 as f32;
     
     for i in 0..=6 {
-        let y = 320.0 - (dist) * i as f32;
+        let y = (320.0 - 3.0*dist) + (dist) * i as f32;
         let mut x: f32 = 0.0;
         for j in 0..=6 {
-            x = 240.0 - (dist + offset) * (j as f32);
+            x = (240.0 - 3.0*dist) + (dist + offset) * (j as f32);
             if i >= 1 && i <= 3 {
                 if j >= 1 && j <= 3 {
                     hex_centers.push(pos2(x, y));
@@ -139,10 +139,10 @@ pub fn gen_points(side: f32) -> Vec<Pos2> {
     let dist: f32 = side * 2 as f32;
 
     for i in 1..=7 {
-        let y = (dist) * i as f32;
+        let y = 320.0 + (dist) * i as f32;
         let mut x: f32 = 0.0;
         for j in 1..=7 {
-            x = (dist) * (j as f32);
+            x = 240.0 + (dist) * (j as f32);
             points.push(pos2(x, y));
         }
     }
