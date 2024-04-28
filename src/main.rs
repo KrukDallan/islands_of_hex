@@ -47,13 +47,14 @@ pub fn hexagon_ui(
     if response.clicked() {
         response.mark_changed();
         if *color == Color32::TRANSPARENT {
-            *color = Color32::GOLD;
-        } else if *color == Color32::GOLD {
-            *color = Color32::GREEN;
-        } else {
-            *color = Color32::GOLD;
+            if game_map.get_turn() {
+                *color = Color32::GOLD;
+            } else {
+                *color = Color32::GREEN;
+            }
+
+            game_map.change_tile_color(center, color);
         }
-        game_map.change_tile_color(center, color);
     }
     response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, ""));
 

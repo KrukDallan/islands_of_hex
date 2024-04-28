@@ -5,11 +5,12 @@ use egui::{ahash::HashMap, pos2, Color32, Pos2};
 
 pub struct GameMap {
     hexagons: Vec<HexagonTile>,
+    turn: bool,
 }
 
 impl GameMap {
     pub fn new() -> GameMap {
-        GameMap { hexagons: vec![] }
+        GameMap { hexagons: vec![], turn: false }
     }
 
     pub fn build(&mut self, centers: &Vec<Pos2>) {
@@ -38,8 +39,13 @@ impl GameMap {
         for h in self.hexagons.as_mut_slice() {
             if h.center == *center {
                 h.change_color(color);
+                self.turn = !self.turn;
             }
         }
+    }
+
+    pub fn get_turn(&self) -> bool{
+        self.turn
     }
 }
 
