@@ -16,6 +16,45 @@ impl GameMap {
         }
     }
 
+    pub fn build2(&mut self, side: f32) {
+        let mut hex_centers: Vec<Pos2> = vec![];
+
+        let mut prev_point: Pos2 = Pos2::new(0.0, 0.0);
+
+        let margin: f32 = side / 4.0;
+
+        let distance: f32 = side * 2 as f32;
+
+        for i in -2..=2 {
+            let mut offset: f32 = side;
+            let y = 320.0 + distance * i as f32;
+            let mut x: f32 = 0.0;
+            for j in -2..=2 {
+                x = 240.0 + distance * j as f32;
+
+                let mut tile = HexagonTile::build(pos2(x, y - offset), Color32::TRANSPARENT);
+                if prev_point.x != 0.0 && prev_point.y != 0.0 {
+                    tile.neighbors.set_left(prev_point);
+
+                    if i >= -1 {
+                        let idx = nearest(tile.center, &hex_centers);
+                        match idx {
+                            Some(i) => {
+                                tile.neighbors.set_up(hex_centers.as_slice()[i]);
+                            }
+                            None => {}
+                        }
+                    }
+                }
+
+                // -----
+
+                hex_centers.push(pos2(x, y - offset));
+                offset = offset + side;
+            }
+        }
+    }
+
     pub fn build(&mut self, centers: &Vec<Pos2>) {
         let mut hexagons: Vec<HexagonTile> = vec![];
 
@@ -23,6 +62,14 @@ impl GameMap {
             hexagons.push(HexagonTile {
                 center: *c,
                 color: Color32::TRANSPARENT,
+                neighbors: Neighbors {
+                    up: None,
+                    down: None,
+                    right: None,
+                    left: None,
+                    diagonal_top_left: None,
+                    diagonal_bottom_right: None,
+                },
             });
         }
 
@@ -55,6 +102,7 @@ impl GameMap {
 pub struct HexagonTile {
     center: Pos2,
     color: Color32,
+    neighbors: Neighbors,
 }
 
 impl HexagonTile {
@@ -62,11 +110,54 @@ impl HexagonTile {
         HexagonTile {
             center: center,
             color: color,
+            neighbors: Neighbors {
+                up: None,
+                down: None,
+                right: None,
+                left: None,
+                diagonal_top_left: None,
+                diagonal_bottom_right: None,
+            },
         }
     }
 
     pub fn change_color(&mut self, new_color: &Color32) {
         self.color = *new_color;
+    }
+}
+
+pub struct Neighbors {
+    up: Option<Pos2>,
+    down: Option<Pos2>,
+    right: Option<Pos2>,
+    left: Option<Pos2>,
+    diagonal_top_left: Option<Pos2>,
+    diagonal_bottom_right: Option<Pos2>,
+}
+
+impl Neighbors {
+    pub fn set_up(&mut self, point: Pos2) {
+        self.up = Some(point);
+    }
+
+    pub fn set_down(&mut self, point: Pos2) {
+        self.down = Some(point);
+    }
+
+    pub fn set_right(&mut self, point: Pos2) {
+        self.right = Some(point);
+    }
+
+    pub fn set_left(&mut self, point: Pos2) {
+        self.left = Some(point);
+    }
+
+    pub fn set_diagonal_top_left(&mut self, point: Pos2) {
+        self.diagonal_top_left = Some(point);
+    }
+
+    pub fn set_diagonal_bottom_right(&mut self, point: Pos2) {
+        self.diagonal_bottom_right = Some(point);
     }
 }
 
@@ -95,7 +186,7 @@ pub fn gen_map(side: f32) -> Vec<Pos2> {
 
     for i in -2..=2 {
         let mut offset: f32 = side;
-        let y = 320.0 + dist*i as f32;
+        let y = 320.0 + dist * i as f32;
         let mut x: f32 = 0.0;
         for j in -2..=2 {
             x = 240.0 + dist * j as f32;
@@ -159,3 +250,9 @@ pub fn nearest(target: Pos2, group: &Vec<Pos2>) -> Option<usize> {
 // prendi la griglia 3x3 centrale, e salva la pos di quei punti
 // partendo da quei 9, trova i restanti 16 usando greedy+random approach (ogni punto "esterno" già scelto avrà uno o due punti non scelti più vicini a lui)
 // genera esagoni partendo dai punti
+
+// per aggiungere i vicini delle tiles:
+// - primo vicino: durante la costruzione dei punti (il vicino è il punto precedente)
+// - secondo vicino: è il punto più vicino, diverso dal precedente, già creato
+// - ulteriori vicini: i vicini della tile di cui però essa non è vicina
+// vicini diagonali: indice nell'array -6 e +6
