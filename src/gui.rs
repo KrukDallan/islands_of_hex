@@ -101,7 +101,7 @@ pub fn gen_map(side: f32) -> Vec<Pos2> {
             x = (240.0 - 2.0 * dist) + (dist + margin) * (j as f32);
 
             hex_centers.push(pos2(x, y - offset));
-            offset = offset + offset;
+            offset = offset + side;
         }
     }
 
