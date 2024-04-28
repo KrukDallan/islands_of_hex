@@ -1,11 +1,68 @@
 use std::vec;
 
 use eframe::egui;
-use egui::{pos2, Pos2};
+use egui::{ahash::HashMap, pos2, Color32, Pos2};
+
+pub struct GameMap {
+    hexagons: Vec<HexagonTile>,
+}
+
+impl GameMap {
+    pub fn new() -> GameMap {
+        GameMap { hexagons: vec![] }
+    }
+
+    pub fn build(&mut self, centers: &Vec<Pos2>) {
+        let mut hexagons: Vec<HexagonTile> = vec![];
+
+        for c in centers.as_slice() {
+            hexagons.push(HexagonTile {
+                center: *c,
+                color: Color32::TRANSPARENT,
+            });
+        }
+
+        self.hexagons = hexagons;
+    }
+
+    pub fn get_tile_color(&mut self, center: &Pos2) -> Color32 {
+        for h in self.hexagons.as_slice() {
+            if h.center == *center {
+                return h.color;
+            }
+        }
+        return Color32::TRANSPARENT;
+    }
+
+    pub fn change_tile_color(&mut self, center: &Pos2, color: &Color32) {
+        for h in self.hexagons.as_mut_slice() {
+            if h.center == *center {
+                h.change_color(color);
+            }
+        }
+    }
+}
+
+pub struct HexagonTile {
+    center: Pos2,
+    color: Color32,
+}
+
+impl HexagonTile {
+    pub fn build(center: Pos2, color: Color32) -> HexagonTile {
+        HexagonTile {
+            center: center,
+            color: color,
+        }
+    }
+
+    pub fn change_color(&mut self, new_color: &Color32) {
+        self.color = *new_color;
+    }
+}
 
 pub fn hexagon_vertices(center: egui::Pos2, distance: f32) -> Vec<Pos2> {
     let mut vertices: Vec<Pos2> = Vec::new();
-    //vertices.push(start);
     let angle_deg: f32 = 60.0; // Angle between two consecutive vertices in degrees
 
     for i in 0..6 {
@@ -23,17 +80,17 @@ pub fn gen_map(side: f32) -> Vec<Pos2> {
 
     let mut points: Vec<Pos2> = vec![];
 
-    let offset: f32 = 10.0;
+    let offset: f32 = side / 4.0;
 
-    let dist: f32 = side*2 as f32;
+    let dist: f32 = side * 2 as f32;
 
     for i in 1..=7 {
-        let y = (dist)*i as f32;
+        let y = (dist) * i as f32;
         let mut x: f32 = 0.0;
         for j in 1..=7 {
-            x = (dist) * (j as f32);
-            if i >= 3 && i <= 4 {
-                if j >= 3 && j <= 4 {
+            x = (dist + offset) * (j as f32);
+            if i >= 3 && i <= 5 {
+                if j >= 3 && j <= 5 {
                     hex_centers.push(pos2(x, y));
                 }
             } else {
@@ -42,45 +99,45 @@ pub fn gen_map(side: f32) -> Vec<Pos2> {
         }
     }
     // we will now find the remaining centers
-    let mut counter = 25 - 9;
+    let mut counter: i8 = 16;
     let mut new_centers: Vec<Pos2> = vec![];
     while counter > 0 {
-        for p in hex_centers.as_slice(){
+        for p in hex_centers.as_slice() {
             let index = nearest(*p, &points);
-            match index{
-                Some(x) =>{
-                    if !hex_centers.contains(&points[x]){
-                        counter -= 1;
+            match index {
+                Some(x) => {
+                    if !hex_centers.contains(&points[x]) {
                         new_centers.push(points[x]);
                         points.remove(x);
+                        counter -= 1;
+                        if counter == 0 {
+                            break;
+                        }
                     }
                 }
-                None => {
-                    continue
-                }
+                None => continue,
             }
         }
     }
 
-/*     for i in new_centers.as_slice(){
+    for i in new_centers.as_slice() {
         hex_centers.push(*i);
-    } */
+    }
 
-    hex_centers 
+    hex_centers
 }
 
-pub fn gen_points(side: f32) -> Vec<Pos2>{
-
+pub fn gen_points(side: f32) -> Vec<Pos2> {
     let mut points: Vec<Pos2> = vec![];
 
-    let dist: f32 = side*2 as f32;
+    let dist: f32 = side * 2 as f32;
 
     for i in 1..=7 {
-        let y = (dist)*i as f32;
+        let y = (dist) * i as f32;
         let mut x: f32 = 0.0;
         for j in 1..=7 {
             x = (dist) * (j as f32);
-                points.push(pos2(x, y));    
+            points.push(pos2(x, y));
         }
     }
 
@@ -90,7 +147,6 @@ pub fn gen_points(side: f32) -> Vec<Pos2>{
 /// Returns the index of the nearest point to 'target'
 pub fn nearest(target: Pos2, group: &Vec<Pos2>) -> Option<usize> {
     let mut index: Option<usize> = None;
-    
 
     for p in group.as_slice() {
         if target.distance(*p) < target.distance(group[index.unwrap_or(0)]) {
