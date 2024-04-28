@@ -89,14 +89,14 @@ pub fn gen_map(side: f32) -> Vec<Pos2> {
     let offset: f32 = side / 4.0;
 
     let dist: f32 = side * 2 as f32;
-
-    for i in 1..=7 {
-        let y = (dist) * i as f32;
+    
+    for i in 0..=6 {
+        let y = 320.0 - (dist) * i as f32;
         let mut x: f32 = 0.0;
-        for j in 1..=7 {
-            x = (dist + offset) * (j as f32);
-            if i >= 3 && i <= 5 {
-                if j >= 3 && j <= 5 {
+        for j in 0..=6 {
+            x = 240.0 - (dist + offset) * (j as f32);
+            if i >= 1 && i <= 3 {
+                if j >= 1 && j <= 3 {
                     hex_centers.push(pos2(x, y));
                 }
             } else {

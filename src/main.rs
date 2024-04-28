@@ -2,7 +2,7 @@
                                                                    //#![allow(rustdoc::missing_crate_level_docs)] // it's an example
 
 use eframe::egui;
-use egui::{pos2, vec2, Color32, Pos2};
+use egui::{pos2, vec2, Color32, Pos2, Rect, Rounding};
 use gui::GameMap;
 
 mod gui;
@@ -19,13 +19,15 @@ fn main() -> Result<(), eframe::Error> {
         ..Default::default()
     };
 
+    
+
     eframe::run_simple_native("Islands of hex", options, move |ctx, _frame| {
         egui::CentralPanel::default().show(ctx, |ui| {
             for h in hex_centers.as_mut_slice() {
                 let mut color = game_map.get_tile_color(h);
                 hexagon_ui(ui, &mut game_map, h, &mut color, &side);
             }
-            //painter.extend(shapes);
+            //ui.painter().add(egui::Shape::rect_filled(Rect::from_center_size(pos2(240.0, 320.0), vec2(4.0, 4.0)), Rounding::default(), Color32::WHITE));
         });
     })
 }
