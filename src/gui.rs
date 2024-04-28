@@ -10,7 +10,10 @@ pub struct GameMap {
 
 impl GameMap {
     pub fn new() -> GameMap {
-        GameMap { hexagons: vec![], turn: false }
+        GameMap {
+            hexagons: vec![],
+            turn: false,
+        }
     }
 
     pub fn build(&mut self, centers: &Vec<Pos2>) {
@@ -44,7 +47,7 @@ impl GameMap {
         }
     }
 
-    pub fn get_turn(&self) -> bool{
+    pub fn get_turn(&self) -> bool {
         self.turn
     }
 }
@@ -86,48 +89,20 @@ pub fn gen_map(side: f32) -> Vec<Pos2> {
 
     let mut points: Vec<Pos2> = vec![];
 
-    let offset: f32 = side / 4.0;
+    let margin: f32 = side / 4.0;
 
     let dist: f32 = side * 2 as f32;
-    
-    for i in 0..=6 {
-        let y = (320.0 - 3.0*dist) + (dist) * i as f32;
-        let mut x: f32 = 0.0;
-        for j in 0..=6 {
-            x = (240.0 - 3.0*dist) + (dist + offset) * (j as f32);
-            if i >= 1 && i <= 3 {
-                if j >= 1 && j <= 3 {
-                    hex_centers.push(pos2(x, y));
-                }
-            } else {
-                points.push(pos2(x, y));
-            }
-        }
-    }
-    // we will now find the remaining centers
-    let mut counter: i8 = 16;
-    let mut new_centers: Vec<Pos2> = vec![];
-    while counter > 0 {
-        for p in hex_centers.as_slice() {
-            let index = nearest(*p, &points);
-            match index {
-                Some(x) => {
-                    if !hex_centers.contains(&points[x]) {
-                        new_centers.push(points[x]);
-                        points.remove(x);
-                        counter -= 1;
-                        if counter == 0 {
-                            break;
-                        }
-                    }
-                }
-                None => continue,
-            }
-        }
-    }
 
-    for i in new_centers.as_slice() {
-        hex_centers.push(*i);
+    for i in -2..=2 {
+        let mut offset: f32 = side;
+        let y = (320.0 - 2.0 * dist) + (dist) * i as f32;
+        let mut x: f32 = 0.0;
+        for j in -2..=2 {
+            x = (240.0 - 2.0 * dist) + (dist + margin) * (j as f32);
+
+            hex_centers.push(pos2(x, y - offset));
+            offset = offset + offset;
+        }
     }
 
     hex_centers

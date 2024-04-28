@@ -9,7 +9,7 @@ mod gui;
 fn main() -> Result<(), eframe::Error> {
     let mut game_map = GameMap::new();
 
-    let side: f32 = 15.0;
+    let side: f32 = 14.0;
     let mut hex_centers = gui::gen_map(side);
 
     game_map.build(&hex_centers);
