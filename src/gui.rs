@@ -95,10 +95,10 @@ pub fn gen_map(side: f32) -> Vec<Pos2> {
 
     for i in -2..=2 {
         let mut offset: f32 = side;
-        let y = (320.0 - 2.0 * dist) + (dist) * i as f32;
+        let y = 320.0 + dist*i as f32;
         let mut x: f32 = 0.0;
         for j in -2..=2 {
-            x = (240.0 - 2.0 * dist) + (dist + margin) * (j as f32);
+            x = 240.0 + dist * j as f32;
 
             hex_centers.push(pos2(x, y - offset));
             offset = offset + side;
