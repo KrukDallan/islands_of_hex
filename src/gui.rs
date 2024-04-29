@@ -1,29 +1,33 @@
-use std::vec;
+use std::{
+    ops::{Deref, DerefMut},
+    vec,
+};
 
 use eframe::egui;
-use egui::{ahash::HashMap, pos2, Color32, Pos2};
+use egui::{ahash::HashMap, emath::Numeric, pos2, Color32, Pos2};
 
-pub struct GameMap {
-    hexagons: Vec<HexagonTile>,
+#[derive(Default)]
+pub struct GameMap<'a> {
+    hexagons: Vec<HexagonTile<'a>>,
     turn: bool,
+    player1_score: u8,
+    player2_score: u8,
 }
 
-impl GameMap {
-    pub fn new() -> GameMap {
+impl<'a> GameMap<'a> {
+    pub fn new() -> GameMap<'a> {
         GameMap {
             hexagons: vec![],
             turn: false,
+            player1_score: 0,
+            player2_score: 0,
         }
     }
 
-    pub fn build2(&mut self, side: f32) {
+    pub fn build(&mut self, side: f32) {
         let mut hex_centers: Vec<Pos2> = vec![];
 
-        let mut prev_point: Pos2 = Pos2::new(0.0, 0.0);
-
-        let margin: f32 = side / 4.0;
-
-        let distance: f32 = side * 2 as f32;
+        let distance: f32 = side * 2.0;
 
         for i in -2..=2 {
             let mut offset: f32 = side;
@@ -32,48 +36,22 @@ impl GameMap {
             for j in -2..=2 {
                 x = 240.0 + distance * j as f32;
 
-                let mut tile = HexagonTile::build(pos2(x, y - offset), Color32::TRANSPARENT);
-                if prev_point.x != 0.0 && prev_point.y != 0.0 {
-                    tile.neighbors.set_left(prev_point);
-
-                    if i >= -1 {
-                        let idx = nearest(tile.center, &hex_centers);
-                        match idx {
-                            Some(i) => {
-                                tile.neighbors.set_up(hex_centers.as_slice()[i]);
-                            }
-                            None => {}
-                        }
-                    }
-                }
-
-                // -----
-
+                let tile = HexagonTile::build(pos2(x, y - offset), Color32::TRANSPARENT);
                 hex_centers.push(pos2(x, y - offset));
-                offset = offset + side;
+                self.hexagons.push(tile);
+                offset += side;
             }
         }
     }
 
-    pub fn build(&mut self, centers: &Vec<Pos2>) {
-        let mut hexagons: Vec<HexagonTile> = vec![];
+    pub fn get_centers(&self) -> Vec<Pos2> {
+        let mut centers: Vec<Pos2> = vec![];
 
-        for c in centers.as_slice() {
-            hexagons.push(HexagonTile {
-                center: *c,
-                color: Color32::TRANSPARENT,
-                neighbors: Neighbors {
-                    up: None,
-                    down: None,
-                    right: None,
-                    left: None,
-                    diagonal_top_left: None,
-                    diagonal_bottom_right: None,
-                },
-            });
+        for i in self.hexagons.as_slice() {
+            centers.push(i.center);
         }
 
-        self.hexagons = hexagons;
+        centers
     }
 
     pub fn get_tile_color(&mut self, center: &Pos2) -> Color32 {
@@ -85,11 +63,12 @@ impl GameMap {
         return Color32::TRANSPARENT;
     }
 
-    pub fn change_tile_color(&mut self, center: &Pos2, color: &Color32) {
+    pub fn change_tile_color(&mut self, center: &Pos2, color: Color32) {
         for h in self.hexagons.as_mut_slice() {
             if h.center == *center {
                 h.change_color(color);
                 self.turn = !self.turn;
+                break;
             }
         }
     }
@@ -97,68 +76,185 @@ impl GameMap {
     pub fn get_turn(&self) -> bool {
         self.turn
     }
+
+    pub fn get_player1_score(&self) -> u8 {
+        self.player1_score
+    }
+
+    pub fn get_player2_score(&self) -> u8 {
+        self.player2_score
+    }
+
+    pub fn update_scores(&mut self) {
+        let mut islands: Vec<Island> = vec![];
+        let mut checked: Vec<Pos2> = vec![];
+
+        for h in self.hexagons.as_slice() {
+            let index = self
+                .hexagons
+                .iter()
+                .position(|e| e.center == h.center)
+                .unwrap();
+
+            let mut island: Island = Island {
+                centers: vec![],
+                color: Color32::TRANSPARENT,
+            };
+
+            if !checked.contains(&h.center) {
+                checked.push(h.center);
+                if h.color == Color32::GREEN {
+                    island.color = Color32::GREEN;
+                } else if h.color == Color32::LIGHT_RED {
+                    island.color = Color32::LIGHT_RED;
+                } else {
+                    continue;
+                }
+                island.centers.push(h.center);
+
+                // check neighbors
+                if index < self.hexagons.as_slice().len() - 1
+                    && (index + 1) % 5 != 0
+                    && self.hexagons.as_slice().get(index + 1).unwrap().color == h.color
+                {
+                    
+                    island
+                        .centers
+                        .push(self.hexagons.as_slice().get(index + 1).unwrap().center);
+                    //checked.push(self.hexagons.as_slice().get(index + 1).unwrap().center);
+                }
+
+                if index < 20 && self.hexagons.as_slice().get(index + 5).unwrap().color == h.color {
+                    
+                    island
+                        .centers
+                        .push(self.hexagons.as_slice().get(index + 5).unwrap().center);
+                    //checked.push(self.hexagons.as_slice().get(index + 5).unwrap().center);
+                }
+
+                if index < 19
+                    && (index + 1) % 5 != 0
+                    && self.hexagons.as_slice().get(index + 6).unwrap().color == h.color
+                {
+                  
+                    island
+                        .centers
+                        .push(self.hexagons.as_slice().get(index + 6).unwrap().center);
+                    //checked.push(self.hexagons.as_slice().get(index + 6).unwrap().center);
+                }
+
+                if index > 4 && self.hexagons.as_slice().get(index - 5).unwrap().color == h.color {
+                    
+                    island
+                        .centers
+                        .push(self.hexagons.as_slice().get(index - 5).unwrap().center);
+                    //checked.push(self.hexagons.as_slice().get(index - 5).unwrap().center);
+                }
+
+                if index > 5
+                    && index % 5 != 0
+                    && self.hexagons.as_slice().get(index - 6).unwrap().color == h.color
+                {
+                    
+                    island
+                        .centers
+                        .push(self.hexagons.as_slice().get(index - 6).unwrap().center);
+                    //checked.push(self.hexagons.as_slice().get(index - 6).unwrap().center);
+                }
+
+                // check if the current tile or any of its neighbor is already present in one of the isle in isles
+                let mut to_be_added: Vec<Pos2> = vec![];
+
+                let mut idx: Vec<usize> = vec![];
+                let mut should_change: bool = false;
+
+                'outer: for i in islands.as_slice() {
+                    for h in island.centers.as_slice() {
+                        if i.centers.contains(&h) {
+                            if !idx.contains(
+                                &islands.iter().position(|e| e.centers == i.centers).unwrap(),
+                            ) {
+                                if should_change == true {
+                                    idx.push(
+                                        islands
+                                            .iter()
+                                            .position(|e| e.centers == i.centers)
+                                            .unwrap()
+                                            - 1,
+                                    );
+                                } else {
+                                    idx.push(
+                                        islands
+                                            .iter()
+                                            .position(|e| e.centers == i.centers)
+                                            .unwrap(),
+                                    );
+                                }
+                            }
+
+                            for element in i.centers.as_slice() {
+                                to_be_added.push(*element);
+                            }
+                            should_change = true;
+                            continue 'outer;
+                        }
+                    }
+                }
+
+                for e in to_be_added.as_slice() {
+                    if !island.centers.contains(e) {
+                        island.centers.push(*e);
+                    }
+                }
+
+                if !islands.is_empty() && should_change {
+                    for i in idx.as_slice() {
+                        islands.remove(*i);
+                    }
+                }
+
+                islands.push(island);
+            }
+        }
+        self.player1_score = 0;
+        self.player2_score = 0;
+        for i in islands.as_slice() {
+            if i.color == Color32::GREEN {
+                self.player1_score += 1;
+            } else if i.color == Color32::LIGHT_RED {
+                self.player2_score += 1;
+            }
+        }
+        //println!("Islands: {:?}", islands);
+    }
 }
 
-pub struct HexagonTile {
+pub struct HexagonTile<'a> {
     center: Pos2,
     color: Color32,
-    neighbors: Neighbors,
+    neighbors: Vec<&'a mut HexagonTile<'a>>,
+    checked: bool,
 }
 
-impl HexagonTile {
-    pub fn build(center: Pos2, color: Color32) -> HexagonTile {
+impl<'a> HexagonTile<'a> {
+    pub fn build(center: Pos2, color: Color32) -> HexagonTile<'a> {
         HexagonTile {
-            center: center,
-            color: color,
-            neighbors: Neighbors {
-                up: None,
-                down: None,
-                right: None,
-                left: None,
-                diagonal_top_left: None,
-                diagonal_bottom_right: None,
-            },
+            center,
+            color,
+            neighbors: vec![],
+            checked: false,
         }
     }
 
-    pub fn change_color(&mut self, new_color: &Color32) {
-        self.color = *new_color;
+    pub fn change_color(&mut self, new_color: Color32) {
+        self.color = new_color;
     }
 }
 
-pub struct Neighbors {
-    up: Option<Pos2>,
-    down: Option<Pos2>,
-    right: Option<Pos2>,
-    left: Option<Pos2>,
-    diagonal_top_left: Option<Pos2>,
-    diagonal_bottom_right: Option<Pos2>,
-}
-
-impl Neighbors {
-    pub fn set_up(&mut self, point: Pos2) {
-        self.up = Some(point);
-    }
-
-    pub fn set_down(&mut self, point: Pos2) {
-        self.down = Some(point);
-    }
-
-    pub fn set_right(&mut self, point: Pos2) {
-        self.right = Some(point);
-    }
-
-    pub fn set_left(&mut self, point: Pos2) {
-        self.left = Some(point);
-    }
-
-    pub fn set_diagonal_top_left(&mut self, point: Pos2) {
-        self.diagonal_top_left = Some(point);
-    }
-
-    pub fn set_diagonal_bottom_right(&mut self, point: Pos2) {
-        self.diagonal_bottom_right = Some(point);
-    }
+#[derive(Debug)]
+pub struct Island {
+    centers: Vec<Pos2>,
+    color: Color32,
 }
 
 pub fn hexagon_vertices(center: egui::Pos2, distance: f32) -> Vec<Pos2> {
@@ -174,85 +270,3 @@ pub fn hexagon_vertices(center: egui::Pos2, distance: f32) -> Vec<Pos2> {
 
     vertices
 }
-
-pub fn gen_map(side: f32) -> Vec<Pos2> {
-    let mut hex_centers: Vec<Pos2> = vec![];
-
-    let mut points: Vec<Pos2> = vec![];
-
-    let margin: f32 = side / 4.0;
-
-    let dist: f32 = side * 2 as f32;
-
-    for i in -2..=2 {
-        let mut offset: f32 = side;
-        let y = 320.0 + dist * i as f32;
-        let mut x: f32 = 0.0;
-        for j in -2..=2 {
-            x = 240.0 + dist * j as f32;
-
-            hex_centers.push(pos2(x, y - offset));
-            offset = offset + side;
-        }
-    }
-
-    hex_centers
-}
-
-pub fn gen_points(side: f32) -> Vec<Pos2> {
-    let mut points: Vec<Pos2> = vec![];
-
-    let dist: f32 = side * 2 as f32;
-
-    for i in 1..=7 {
-        let y = 320.0 + (dist) * i as f32;
-        let mut x: f32 = 0.0;
-        for j in 1..=7 {
-            x = 240.0 + (dist) * (j as f32);
-            points.push(pos2(x, y));
-        }
-    }
-
-    points
-}
-
-/// Returns the index of the nearest point to 'target'
-pub fn nearest(target: Pos2, group: &Vec<Pos2>) -> Option<usize> {
-    let mut index: Option<usize> = None;
-
-    for p in group.as_slice() {
-        if target.distance(*p) < target.distance(group[index.unwrap_or(0)]) {
-            index = group.iter().position(|x| *x == *p);
-        }
-    }
-
-    index
-}
-
-/* fn thrash_bin() {
-    let desired_size = ui.spacing().interact_size.y * egui::vec2(2.0, 2.0);
-    let (mut rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
-
-    rect = rect.translate(vec2(100.0, 100.0));
-    let square = egui::Shape::rect_stroke(
-        rect,
-        egui::Rounding::default(),
-        (10.0, egui::Color32::WHITE),
-    );
-    let mut point = egui::pos2(10.0, 10.0);
-    let line =
-        egui::Shape::line_segment([1.0 * point, 100.0 * point], (10.0, egui::Color32::WHITE));
-} */
-
-// TODO:
-// per modalità griglia 5x5
-// genera griglia 7x7 di punti equidistanti fra loro ad una distanza di (lato_esagono + offset) (o altra dimensione, sicuramente maggiore di 5x5)
-// prendi la griglia 3x3 centrale, e salva la pos di quei punti
-// partendo da quei 9, trova i restanti 16 usando greedy+random approach (ogni punto "esterno" già scelto avrà uno o due punti non scelti più vicini a lui)
-// genera esagoni partendo dai punti
-
-// per aggiungere i vicini delle tiles:
-// - primo vicino: durante la costruzione dei punti (il vicino è il punto precedente)
-// - secondo vicino: è il punto più vicino, diverso dal precedente, già creato
-// - ulteriori vicini: i vicini della tile di cui però essa non è vicina
-// vicini diagonali: indice nell'array -6 e +6
