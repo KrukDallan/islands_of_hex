@@ -2,10 +2,15 @@
 //#![allow(rustdoc::missing_crate_level_docs)] // it's an example
 
 use eframe::{egui, Theme};
-use egui::{pos2, vec2, Color32, Pos2, Rect, RichText, Rounding, Visuals};
-use gui::GameMap;
+use egui::{ vec2, Color32, Pos2, RichText, Visuals};
+use game_map::GameMap;
+use utils::hexagon_vertices;
 
-mod gui;
+mod game_map;
+mod hexagon_tile;
+mod utils;
+
+
 fn main() -> Result<(), eframe::Error> {
     let mut game_map = GameMap::new();
 
@@ -22,7 +27,7 @@ fn main() -> Result<(), eframe::Error> {
     eframe::run_simple_native("Islands of hex", options, move |ctx, _frame| {
         egui::CentralPanel::default().show(ctx, |ui| {
             ctx.set_visuals(Visuals::dark());
-            let mut player_label = if game_map.get_turn() {
+            let player_label = if game_map.get_turn() {
                 "Player 2"
             } else {
                 "Player 1"
@@ -80,7 +85,7 @@ pub fn hexagon_ui(
     response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, ""));
 
     let hexagon = egui::Shape::convex_polygon(
-        gui::hexagon_vertices(*center, *side),
+        hexagon_vertices(*center, *side),
         *color,
         (1.0, egui::Color32::WHITE),
     );
