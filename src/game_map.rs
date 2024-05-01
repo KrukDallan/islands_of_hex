@@ -1,7 +1,5 @@
 use std::{
-    borrow::{Borrow, BorrowMut},
     cell::RefCell,
-    collections::HashMap,
     rc::Rc,
     vec,
 };
@@ -30,7 +28,7 @@ impl GameMap {
 
     pub fn build(&mut self, side: f32) {
         let mut hex_centers: Vec<Pos2> = vec![];
-        let mut rc_tiles: RefCell<Vec<Rc<HexagonTile>>> = RefCell::new(vec![]);
+        let rc_tiles: RefCell<Vec<Rc<HexagonTile>>> = RefCell::new(vec![]);
 
         let distance: f32 = side * 2.0;
         let mut id: usize = 0;
@@ -149,7 +147,6 @@ impl GameMap {
 
             let mut island: Island = Island {
                 ids: vec![],
-                centers: vec![],
                 color: Color32::TRANSPARENT,
             };
 
@@ -221,6 +218,5 @@ impl GameMap {
 #[derive(Debug)]
 pub struct Island {
     ids: Vec<usize>,
-    centers: Vec<Pos2>,
     color: Color32,
 }
