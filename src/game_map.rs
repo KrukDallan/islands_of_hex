@@ -162,7 +162,7 @@ impl GameMap {
                 island.ids.push(tile.get_id());
 
                 for n in tile.neighbors.borrow().as_slice() {
-                    println!("n: {:?}", n.upgrade());
+                    //println!("n: {:?}", n.upgrade());
                     let n_color = n.upgrade().unwrap().get_color();
                     if n_color == color {
                         checked.push(n.upgrade().unwrap().get_id());
