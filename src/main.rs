@@ -1,15 +1,11 @@
-//#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-//#![allow(rustdoc::missing_crate_level_docs)] // it's an example
-
 use eframe::{egui, Theme};
-use egui::{ vec2, Color32, Pos2, RichText, Visuals};
+use egui::{vec2, Color32, Pos2, RichText, Visuals};
 use game_map::GameMap;
 use utils::hexagon_vertices;
 
 mod game_map;
 mod hexagon_tile;
 mod utils;
-
 
 fn main() -> Result<(), eframe::Error> {
     let mut game_map = GameMap::new();

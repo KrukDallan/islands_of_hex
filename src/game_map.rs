@@ -1,8 +1,4 @@
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    vec,
-};
+use std::{cell::RefCell, rc::Rc, vec};
 
 use eframe::egui;
 use egui::{pos2, Color32, Pos2};
@@ -185,13 +181,12 @@ impl GameMap {
                                     ids_to_add.push(*i_id);
                                 }
                             }
-                            indexes.push(index-indexes.len());
+                            indexes.push(index - indexes.len());
                         }
                     }
                     index += 1;
                 }
                 for index in indexes.as_slice() {
-
                     islands.remove(*index);
                 }
 

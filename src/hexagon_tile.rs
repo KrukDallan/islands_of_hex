@@ -1,7 +1,4 @@
-use std::{
-    cell::RefCell,
-    rc::Weak,
-};
+use std::{cell::RefCell, rc::Weak};
 
 use egui::{Color32, Pos2};
 

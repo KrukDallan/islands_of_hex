@@ -1,4 +1,4 @@
-use egui::{ pos2, Color32, Pos2};
+use egui::{pos2, Pos2};
 
 pub fn hexagon_vertices(center: egui::Pos2, distance: f32) -> Vec<Pos2> {
     let mut vertices: Vec<Pos2> = Vec::new();
@@ -13,4 +13,3 @@ pub fn hexagon_vertices(center: egui::Pos2, distance: f32) -> Vec<Pos2> {
 
     vertices
 }
-
