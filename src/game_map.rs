@@ -10,6 +10,7 @@ pub struct GameMap {
     turn: bool,
     player1_score: u8,
     player2_score: u8,
+    winner: String,
 }
 
 impl GameMap {
@@ -19,6 +20,7 @@ impl GameMap {
             turn: false,
             player1_score: 0,
             player2_score: 0,
+            winner: String::from(""),
         }
     }
 
@@ -90,6 +92,14 @@ impl GameMap {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.hexagons.replace(vec![]);
+        self.turn = false;
+        self.player1_score = 0;
+        self.player2_score = 0;
+        self.winner = String::from("");
+    }
+
     pub fn get_centers(&self) -> Vec<Pos2> {
         let mut centers: Vec<Pos2> = vec![];
 
@@ -133,6 +143,20 @@ impl GameMap {
         self.player2_score
     }
 
+    pub fn get_winner(&self) -> String{
+        self.winner.clone()
+    }
+
+    pub fn is_full(&mut self) -> bool{
+        let mut counter = 0;
+        for tile in self.hexagons.borrow().as_slice(){
+            if tile.get_color() != Color32::TRANSPARENT{
+                counter += 1;
+            }
+        }
+        return counter == 25;
+    }
+
     pub fn update_scores(&mut self) {
         let mut islands: Vec<Island> = vec![];
 
@@ -158,7 +182,6 @@ impl GameMap {
                 island.ids.push(tile.get_id());
 
                 for n in tile.neighbors.borrow().as_slice() {
-                    //println!("n: {:?}", n.upgrade());
                     let n_color = n.upgrade().unwrap().get_color();
                     if n_color == color {
                         checked.push(n.upgrade().unwrap().get_id());
@@ -181,7 +204,10 @@ impl GameMap {
                                     ids_to_add.push(*i_id);
                                 }
                             }
-                            indexes.push(index - indexes.len());
+                            // we account for the fact that, later, we will remove islands by index,
+                            // thus, if indexes contains more than one element, we must consider that when removing an islands, 
+                            // the indices of the remaining one will be decreased by one.
+                            indexes.push(if index>indexes.len() {index - indexes.len()} else {index});
                         }
                     }
                     index += 1;
@@ -205,6 +231,46 @@ impl GameMap {
                 self.player1_score += 1;
             } else if i.color == Color32::LIGHT_RED {
                 self.player2_score += 1;
+            }
+        }
+
+        self.check_winning_conditions();
+    }
+
+    pub fn check_winning_conditions(&mut self) {
+        let tiles = self.hexagons.borrow();
+        // check if player 1 has lost
+        for i in 0..=4{
+            let mut counter: u8 = 0;
+            if tiles[i].get_color() == Color32::GREEN{
+                counter += 1;
+                for j in 1..=4{
+                    let k: usize = j*5 + i;
+                    if tiles[k].get_color() == Color32::GREEN{
+                        counter += 1;
+                    }
+                    if counter == 5 {
+                        self.winner = String::from("Player 2");
+                        return; 
+                    }
+                }
+            }
+        }
+
+        for i in [0,5,10,15,20]{
+            let mut counter: u8 = 0;
+            if tiles[i as usize].get_color() == Color32::LIGHT_RED {
+                counter += 1;
+                for j in 1..=4{
+                    let k: usize = j+i;
+                    if tiles[k].get_color() == Color32::LIGHT_RED{
+                        counter += 1;
+                    }
+                    if counter == 5 {
+                        self.winner = String::from("Player 1");
+                        return; 
+                    }
+                }
             }
         }
     }
