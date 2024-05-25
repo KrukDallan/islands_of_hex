@@ -143,14 +143,14 @@ impl GameMap {
         self.player2_score
     }
 
-    pub fn get_winner(&self) -> String{
+    pub fn get_winner(&self) -> String {
         self.winner.clone()
     }
 
-    pub fn is_full(&mut self) -> bool{
+    pub fn is_full(&mut self) -> bool {
         let mut counter = 0;
-        for tile in self.hexagons.borrow().as_slice(){
-            if tile.get_color() != Color32::TRANSPARENT{
+        for tile in self.hexagons.borrow().as_slice() {
+            if tile.get_color() != Color32::TRANSPARENT {
                 counter += 1;
             }
         }
@@ -205,22 +205,53 @@ impl GameMap {
                                 }
                             }
                             // we account for the fact that, later, we will remove islands by index,
-                            // thus, if indexes contains more than one element, we must consider that when removing an islands, 
+                            // thus, if indexes contains more than one element, we must consider that when removing an islands,
                             // the indices of the remaining one will be decreased by one.
-                            indexes.push(if index>indexes.len() {index - indexes.len()} else {index});
+                            indexes.push(if index > indexes.len() {
+                                index - indexes.len()
+                            } else {
+                                index
+                            });
                         }
                     }
                     index += 1;
                 }
+                indexes.sort();
+                indexes.dedup();
+
                 for index in indexes.as_slice() {
                     islands.remove(*index);
                 }
 
                 for new_id in ids_to_add.as_slice() {
-                    island.ids.push(*new_id);
+                    if !island.ids.contains(new_id) {
+                        island.ids.push(*new_id);
+                    }
                 }
 
                 islands.push(island);
+            }
+        }
+
+        // check losing conditions
+        for island in islands.as_mut_slice() {
+            let mut counter = 0;
+            island.ids.sort();
+
+            if island.ids.len() > 1 {
+                for i in 1..island.ids.len() {
+                    let slice = island.ids.as_slice();
+
+                    if slice[i] - slice[i - 1] < 4 && (slice[i - 1] % 5).abs_diff(slice[i] % 5) > 1
+                    {
+                        break;
+                    } else {
+                        counter += 1;
+                    }
+                }
+                if counter == 5 {
+                    println!("Lost");
+                }
             }
         }
 
@@ -240,35 +271,35 @@ impl GameMap {
     pub fn check_winning_conditions(&mut self) {
         let tiles = self.hexagons.borrow();
         // check if player 1 has lost
-        for i in 0..=4{
+        for i in 0..=4 {
             let mut counter: u8 = 0;
-            if tiles[i].get_color() == Color32::GREEN{
+            if tiles[i].get_color() == Color32::GREEN {
                 counter += 1;
-                for j in 1..=4{
-                    let k: usize = j*5 + i;
-                    if tiles[k].get_color() == Color32::GREEN{
+                for j in 1..=4 {
+                    let k: usize = j * 5 + i;
+                    if tiles[k].get_color() == Color32::GREEN {
                         counter += 1;
                     }
                     if counter == 5 {
                         self.winner = String::from("Player 2");
-                        return; 
+                        return;
                     }
                 }
             }
         }
 
-        for i in [0,5,10,15,20]{
+        for i in [0, 5, 10, 15, 20] {
             let mut counter: u8 = 0;
             if tiles[i as usize].get_color() == Color32::LIGHT_RED {
                 counter += 1;
-                for j in 1..=4{
-                    let k: usize = j+i;
-                    if tiles[k].get_color() == Color32::LIGHT_RED{
+                for j in 1..=4 {
+                    let k: usize = j + i;
+                    if tiles[k].get_color() == Color32::LIGHT_RED {
                         counter += 1;
                     }
                     if counter == 5 {
                         self.winner = String::from("Player 1");
-                        return; 
+                        return;
                     }
                 }
             }
