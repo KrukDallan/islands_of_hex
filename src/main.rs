@@ -37,7 +37,7 @@ fn main() -> Result<(), eframe::Error> {
 
             ui.add_space(50.0);
 
-            if game_map.get_winner() != String::from(""){
+            if game_map.get_winner() != String::from("") {
                 ui.vertical_centered(|ui| {
                     ui.add(|ui: &mut egui::Ui| {
                         let caption = String::from("Winner: ") + &game_map.get_winner();
@@ -52,19 +52,17 @@ fn main() -> Result<(), eframe::Error> {
             }
             ui.add_space(100.0);
 
-            if game_map.get_winner() != String::from("") || game_map.is_full(){
-                ui.vertical_centered(|ui|{
-                    ui.add(|ui: &mut egui::Ui| {
-                        let response = ui.button(RichText::new("Play again").color(Color32::WHITE));
-                        if response.clicked() {
-                            game_map.reset();
-                            game_map.build(side);
-                        }
-                        
-                        return response;
-                    })
-                });
-            } 
+            ui.vertical_centered(|ui| {
+                ui.add(|ui: &mut egui::Ui| {
+                    let response = ui.button(RichText::new("Play again").color(Color32::WHITE));
+                    if response.clicked() {
+                        game_map.reset();
+                        game_map.build(side);
+                    }
+
+                    return response;
+                })
+            });
 
             ui.add_space(100.0);
 
@@ -76,8 +74,6 @@ fn main() -> Result<(), eframe::Error> {
             ui.vertical_centered(|ui| {
                 ui.add(|ui: &mut egui::Ui| ui.label(RichText::new(score).color(Color32::WHITE)))
             });
-
-            
         });
     })
 }
@@ -95,7 +91,7 @@ pub fn hexagon_ui(
         egui::Sense::click(),
     );
 
-    if response.clicked() && game_map.get_winner() == String::from(""){
+    if response.clicked() && game_map.get_winner() == String::from("") {
         response.mark_changed();
         if *color == Color32::TRANSPARENT {
             if game_map.get_turn() {
