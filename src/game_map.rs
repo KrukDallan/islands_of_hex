@@ -180,6 +180,7 @@ impl GameMap {
             }
         } else {
             let mut checked: Vec<usize> = vec![];
+          
 
             for i in self.islands.as_slice() {
                 for id in i.ids.as_slice() {
@@ -193,6 +194,7 @@ impl GameMap {
 
                     let color = tile.get_color();
                     if color != Color32::TRANSPARENT {
+                     
                         let mut new_island: Island = Island {
                             ids: vec![],
                             color: color,
@@ -261,6 +263,18 @@ impl GameMap {
                     self.player2_score += 1;
                 }
             }
+
+            if self.is_full(){
+                if self.player1_score > self.player2_score{
+                    self.winner = String::from("Player 1");
+                }
+                else {
+                    {
+                        self.winner = String::from("Player 2");
+                    }
+                }
+            }
+            
 
             self.check_winning_conditions();
         }
