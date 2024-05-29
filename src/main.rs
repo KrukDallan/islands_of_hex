@@ -69,7 +69,7 @@ fn main() -> Result<(), eframe::Error> {
             ui.collapsing("Rules", |ui| {
                 ui.horizontal_wrapped(|ui| {
                     ui.spacing_mut().item_spacing.x = 0.0;
-                    ui.label("Player 1 loses if they bisects the board with a continuous chain of tiles from left to right.\nPlayer 2 loses if they bisect the board with a continuous chain of tiles from top to bottom.");
+                    ui.label("Player 1 loses if they bisects the board with a continuous chain of tiles from top to bottom.\nPlayer 2 loses if they bisect the board with a continuous chain of tiles from left to right.");
                     ui.add_space(4.0);
                 });
             });
