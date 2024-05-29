@@ -1,12 +1,16 @@
-use std::{cell::RefCell, rc::Rc, vec};
-
 use eframe::egui;
 use egui::{pos2, Color32, Pos2};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    vec,
+};
 
 use crate::hexagon_tile::HexagonTile;
 
 pub struct GameMap {
     hexagons: RefCell<Vec<Rc<HexagonTile>>>,
+    islands: Vec<Island>,
     turn: bool,
     player1_score: u8,
     player2_score: u8,
@@ -17,6 +21,7 @@ impl GameMap {
     pub fn new() -> GameMap {
         GameMap {
             hexagons: RefCell::new(vec![]),
+            islands: vec![],
             turn: false,
             player1_score: 0,
             player2_score: 0,
@@ -158,146 +163,152 @@ impl GameMap {
     }
 
     pub fn update_scores(&mut self) {
-        let mut islands: Vec<Island> = vec![];
-
-        let mut checked: Vec<usize> = vec![];
-
-        for tile in self.hexagons.borrow().as_slice() {
-            let color = tile.color.clone().take();
-
-            let mut island: Island = Island {
-                ids: vec![],
-                color: Color32::TRANSPARENT,
-            };
-
-            if !checked.contains(&tile.id) {
-                checked.push(tile.id);
-                if color == Color32::GREEN {
-                    island.color = Color32::GREEN;
-                } else if color == Color32::LIGHT_RED {
-                    island.color = Color32::LIGHT_RED;
-                } else {
-                    continue;
-                }
-                island.ids.push(tile.get_id());
-
-                for n in tile.neighbors.borrow().as_slice() {
-                    let n_color = n.upgrade().unwrap().get_color();
-                    if n_color == color {
-                        checked.push(n.upgrade().unwrap().get_id());
-                        island.ids.push(n.upgrade().unwrap().get_id());
+        if self.islands.len() == 0 {
+            for tile in self.hexagons.borrow().as_slice() {
+                if tile.get_color() != Color32::TRANSPARENT {
+                    self.islands.push(Island {
+                        ids: vec![tile.get_id()],
+                        color: tile.get_color(),
+                    });
+                    if tile.get_color() == Color32::GREEN {
+                        self.player1_score += 1;
+                    } else {
+                        self.player2_score += 1;
                     }
+                    return;
                 }
+            }
+        } else {
+            let mut checked: Vec<usize> = vec![];
 
-                // Check if other islands contain any of the id of the current island.
-                // If so, we will store the ids that are not in common between the islands that share at least an id.
-                let iterator = islands.iter();
-                let mut indexes: Vec<usize> = vec![];
-                let mut index: usize = 0;
-                // Ids stored here
-                let mut ids_to_add: Vec<usize> = vec![];
-                for i in iterator {
-                    for id in island.ids.as_slice() {
-                        if i.ids.contains(id) {
-                            for i_id in i.ids.as_slice() {
-                                if !ids_to_add.contains(i_id) {
-                                    ids_to_add.push(*i_id);
+            for i in self.islands.as_slice() {
+                for id in i.ids.as_slice() {
+                    checked.push(*id);
+                }
+            }
+
+            for tile in self.hexagons.borrow().as_slice() {
+                if !checked.contains(&tile.get_id()) {
+                    checked.push(tile.get_id());
+
+                    let color = tile.get_color();
+                    if color != Color32::TRANSPARENT {
+                        let mut new_island: Island = Island {
+                            ids: vec![],
+                            color: color,
+                        };
+                        let mut added_by_neighbour = false;
+                        // Check every neighbor n to see if n is already in an island
+                        // If so, add tile to that island.
+                        for n in tile.neighbors.borrow().as_slice() {
+                            if n.upgrade().unwrap().get_color() == tile.get_color() {
+                                for island in self.islands.as_mut_slice() {
+                                    if island.ids.contains(&n.upgrade().unwrap().get_id())
+                                        && !island.ids.contains(&tile.get_id())
+                                    {
+                                        island.ids.push(tile.get_id());
+                                        added_by_neighbour = true;
+                                        continue;
+                                    }
                                 }
                             }
-                            // we account for the fact that, later, we will remove islands by index,
-                            // thus, if indexes contains more than one element, we must consider that when removing an islands,
-                            // the indices of the remaining one will be decreased by one.
-                            indexes.push(if index > indexes.len() {
-                                index - indexes.len()
-                            } else {
-                                index
-                            });
+                        }
+                        // Check if two or more islands share the same id(s)
+                        // If so, merge them
+                        if added_by_neighbour {
+                            let mut merged_ids: Vec<usize> = vec![];
+                            let mut idxs_of_islands_to_delete: Vec<usize> = vec![];
+                            for island in self.islands.as_slice() {
+                                if island.ids.contains(&tile.get_id()) {
+                                    idxs_of_islands_to_delete.push(
+                                        self.islands
+                                            .iter()
+                                            .position(|r| r.ids == island.ids)
+                                            .unwrap(),
+                                    );
+                                    for id in island.ids.as_slice() {
+                                        if !merged_ids.contains(id) {
+                                            merged_ids.push(*id);
+                                        }
+                                    }
+                                }
+                            }
+                            if idxs_of_islands_to_delete.len() > 0 {
+                                for i in 0..idxs_of_islands_to_delete.len() {
+                                    self.islands
+                                        .remove(idxs_of_islands_to_delete.as_slice()[i] - i);
+                                }
+                                for m in merged_ids.as_slice() {
+                                    new_island.ids.push(*m);
+                                }
+                                self.islands.push(new_island);
+                            }
+                        } else {
+                            new_island.ids.push(tile.get_id());
+                            self.islands.push(new_island);
                         }
                     }
-                    index += 1;
-                }
-                indexes.sort();
-                indexes.dedup();
-
-                for index in indexes.as_slice() {
-                    islands.remove(*index);
-                }
-
-                for new_id in ids_to_add.as_slice() {
-                    if !island.ids.contains(new_id) {
-                        island.ids.push(*new_id);
-                    }
-                }
-
-                islands.push(island);
-            }
-        }
-
-        // check losing conditions
-        for island in islands.as_mut_slice() {
-            let mut counter = 0;
-            island.ids.sort();
-
-            if island.ids.len() > 1 {
-                for i in 1..island.ids.len() {
-                    let slice = island.ids.as_slice();
-
-                    if slice[i] - slice[i - 1] < 4 && (slice[i - 1] % 5).abs_diff(slice[i] % 5) > 1
-                    {
-                        break;
-                    } else {
-                        counter += 1;
-                    }
-                }
-                if counter == 5 {
-                    println!("Lost");
                 }
             }
-        }
 
-        self.player1_score = 0;
-        self.player2_score = 0;
-        for i in islands.as_slice() {
-            if i.color == Color32::GREEN {
-                self.player1_score += 1;
-            } else if i.color == Color32::LIGHT_RED {
-                self.player2_score += 1;
+            //println!("{:?}", self.islands);
+            self.player1_score = 0;
+            self.player2_score = 0;
+            for i in self.islands.as_slice() {
+                if i.color == Color32::GREEN {
+                    self.player1_score += 1;
+                } else if i.color == Color32::LIGHT_RED {
+                    self.player2_score += 1;
+                }
             }
-        }
 
-        self.check_winning_conditions();
+            self.check_winning_conditions();
+        }
     }
 
     pub fn check_winning_conditions(&mut self) {
-        let tiles = self.hexagons.borrow();
-        // check if player 1 has lost
-        for i in 0..=4 {
-            let mut counter: u8 = 0;
-            if tiles[i].get_color() == Color32::GREEN {
-                counter += 1;
-                for j in 1..=4 {
-                    let k: usize = j * 5 + i;
-                    if tiles[k].get_color() == Color32::GREEN {
-                        counter += 1;
+        // check islands for paths that divide the board
+        for island in self.islands.as_slice() {
+            if island.ids.len() >= 5 {
+                if island.color == Color32::GREEN {
+                    let mut top_tile_index = false;
+                    let mut bottom_tile_index = false;
+                    for idx in island.ids.as_slice() {
+                        if *idx < 5 {
+                            top_tile_index = true;
+                            continue;
+                        }
+                        if *idx > 19 {
+                            bottom_tile_index = true;
+                            continue;
+                        }
                     }
-                    if counter == 5 {
+                    if top_tile_index && bottom_tile_index {
+                        // On second thought, there is no need to build a graph
+                        // If an isle contains both a top tile and a bottom tile, then
+                        // (in this case) player 1 has lost.
                         self.winner = String::from("Player 2");
                         return;
                     }
-                }
-            }
-        }
-
-        for i in [0, 5, 10, 15, 20] {
-            let mut counter: u8 = 0;
-            if tiles[i as usize].get_color() == Color32::LIGHT_RED {
-                counter += 1;
-                for j in 1..=4 {
-                    let k: usize = j + i;
-                    if tiles[k].get_color() == Color32::LIGHT_RED {
-                        counter += 1;
+                } else {
+                    let mut left_tile_index = false;
+                    let mut right_tile_index = false;
+                    let left_idxs: Vec<usize> = vec![0, 5, 10, 15, 20];
+                    let right_idxs: Vec<usize> = vec![4, 9, 14, 19, 24];
+                    for idx in island.ids.as_slice() {
+                        if left_idxs.contains(idx) {
+                            left_tile_index = true;
+                            continue;
+                        }
+                        if right_idxs.contains(idx) {
+                            right_tile_index = true;
+                            continue;
+                        }
                     }
-                    if counter == 5 {
+                    if left_tile_index && right_tile_index {
+                        // On second thought, there is no need to build a graph
+                        // If an isle contains both a top tile and a bottom tile, then
+                        // (in this case) player 2 has lost.
                         self.winner = String::from("Player 1");
                         return;
                     }
@@ -305,6 +316,8 @@ impl GameMap {
             }
         }
     }
+
+   
 }
 
 #[derive(Debug)]
