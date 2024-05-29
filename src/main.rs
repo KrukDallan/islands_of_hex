@@ -66,6 +66,14 @@ fn main() -> Result<(), eframe::Error> {
 
             ui.add_space(100.0);
 
+            ui.collapsing("Rules", |ui| {
+                ui.horizontal_wrapped(|ui| {
+                    ui.spacing_mut().item_spacing.x = 0.0;
+                    ui.label("Player 1 loses if they bisects the board with a continuous chain of tiles from left to right.\nPlayer 2 loses if they bisect the board with a continuous chain of tiles from top to bottom.");
+                    ui.add_space(4.0);
+                });
+            });
+
             let score = String::from("Player 1:  ")
                 + game_map.get_player1_score().to_string().as_str()
                 + "  |  "
